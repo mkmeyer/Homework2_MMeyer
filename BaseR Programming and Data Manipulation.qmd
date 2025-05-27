@@ -1,0 +1,237 @@
+---
+title: "BaseR Programming and Data Manipulation"
+author: Makenna Meyer
+date: May 27, 2025
+format: pdf
+editor: visual
+---
+
+The following was completed to complete Homework 2 for ST558 and practice basic programming and data manipulation in R. 
+
+```{r, include=FALSE}
+rm(list=ls())
+```
+
+## Task One: Basic Vector Practice
+
+### Question 1
+
+```{r}
+#Creating two vectors called pre and post using provided data
+
+pre <- c(130, 128, 116, 124, 133, 134, 118, 126, 114, 127, 
+         141, 138, 128, 140, 137, 131, 120, 128, 139, 135)
+
+post <- c(114, 98, 113, 99, 107, 116, 113, 111, 119, 117, 
+          101, 119, 130, 122, 106, 106, 124, 102, 117, 113)
+```
+
+### Question 2
+
+```{r}
+#Assigning patient IDs to the vectors
+patient <- paste("Subject", 1:20, sep = "_")
+names(pre) <- patient
+names(post) <- patient
+```
+
+### Question 3
+
+```{r}
+#Creating a vector of the difference in blood pressure pre vs post treatment
+diff_bp <- pre-post
+diff_bp
+```
+
+### Question 4
+
+```{r}
+#Finding the mean difference in blood pressure
+mean(diff_bp)
+```
+
+### Question 5
+
+```{r}
+#Identifying patients that experienced a decrease in blood pressure after treatment 
+which(diff_bp > 0)
+```
+
+### Question 6
+
+```{r}
+#Subseting the difference vector to only return patients with a positive change
+diff_bp[which(diff_bp > 0)]
+```
+
+### Question 7
+
+```{r}
+#Calculating the mean blood pressure difference of patients with a positive change
+mean(diff_bp[which(diff_bp > 0)])
+```
+
+\newpage
+
+## Task Two
+
+### Question 1
+
+```{r}
+#Combining vectors into a data frame
+bp_df_trt <- data.frame(patient, pre, post, diff_bp)
+colnames(bp_df_trt) <- c("patient", "pre_bp", "post_bp", "diff_bp")
+```
+
+### Question 2
+
+```{r}
+#Subseting the data frame to only include patients with a positive change
+bp_df_trt[(bp_df_trt$diff_bp < 0),]
+```
+
+### Question 3
+
+```{r}
+#Adding a data column identifying if the patient's post bp is normal (less than 120)
+bp_df_trt$normal <- bp_df_trt$post_bp < 120
+```
+
+### Question 4
+
+```{r}
+#Displaying the final treatment blood pressure data frame
+knitr::kable(bp_df_trt)
+```
+
+\newpage
+
+## Task Three
+
+### Question 1
+
+```{r}
+#Creating a data frame for patients who received a placebo
+#Only permanently saving the final dataset
+bp_df_placebo <- data.frame(names_plac = paste("Subject", 1:10, sep = "_"),
+                            pre_bp = c(138, 135, 147, 117, 152, 134, 114, 121, 131, 130),
+                            post_bp = c(105, 136, 123, 130, 134, 143, 135, 139, 120, 124))
+bp_df_placebo$diff_bp <- bp_df_placebo$pre_bp - bp_df_placebo$post_bp
+bp_df_placebo$normal <- bp_df_placebo$post_bp < 120
+
+bp_df_placebo
+```
+
+### Question 2
+
+```{r}
+#Creating a list with 2 elements, the treatment dataset and the placebo dataset
+bp_list <- list(treatment=bp_df_trt, placebo=bp_df_placebo)
+```
+
+### Question 3
+
+```{r}
+#Accessing the treatment dataset from the list in 3 different ways
+bp_list[1]
+bp_list[[1]]
+bp_list$treatment
+```
+
+### Question 4
+
+```{r}
+#Displaying thepre_bp column from the placebo dataset
+bp_list[[2]][2]
+```
+\newpage
+
+## Task Four
+
+### Question 1
+
+```{r}
+#Initializing status columns in both treatment and placebo datasets
+bp_list$treatment$status <- character(20)
+bp_list$placebo$status <- character(10)
+```
+
+### Question 2
+
+```{r}
+#Using a for loop to iterate through the 20 treatment patients
+#and classify the post-treatment bp as high, borderline, or optimal
+for(i in 1:20){
+  if(bp_list$treatment$post_bp[i] > 130) {
+    bp_list$treatment$status[i] <- "high"
+    } else if(bp_list$treatment$post_bp[i] > 120){
+      bp_list$treatment$status[i] <- "borderline"
+      } else {
+        bp_list$treatment$status[i] <- "optimal"
+      }
+}
+
+bp_list$treatment
+```
+
+### Question 3
+
+```{r}
+#Using a for loop to iterate through the 10 placebo patients
+#and classify the post-placebo bp as high, borderline, or optimal
+for(i in 1:10){
+  if(bp_list$placebo$post_bp[i] > 130) {
+    bp_list$placebo$status[i] <- "high"
+    } else if(bp_list$placebo$post_bp[i] > 120){
+      bp_list$placebo$status[i] <- "borderline"
+      } else {
+        bp_list$placebo$status[i] <- "optimal"
+      }
+  }
+
+bp_list$placebo
+```
+
+\newpage
+
+## Task Five
+
+```{r}
+#Writing a function that takes in a list of two dataframes, and calculates a
+#certain statistic for the pre, post, and difference bp columns of both dataframes
+task5_func <- function(list, stat = "mean") {
+  my_fun <- get(stat)
+  vec_values <- c(my_fun(list[[1]]$pre_bp),
+               my_fun(list[[1]]$post_bp),
+               my_fun(list[[1]]$diff_bp),
+               my_fun(list[[2]]$pre_bp),
+               my_fun(list[[2]]$post_bp),
+               my_fun(list[[2]]$diff_bp)
+               )
+  vec_names <- c(paste(attributes(list)$names[[1]], "pre_bp", stat, sep = " "),
+                 paste(attributes(list)$names[[1]], "post_bp", stat, sep = " "),
+                 paste(attributes(list)$names[[1]], "diff_bp", stat, sep = " "),
+                 paste(attributes(list)$names[[2]], "pre_bp", stat, sep = " "),
+                 paste(attributes(list)$names[[2]], "post_bp", stat, sep = " "),
+                 paste(attributes(list)$names[[2]], "diff_bp", stat, sep = " ")
+                 )
+  names(vec_values) <- vec_names
+  return(list(vec_values))
+}
+```
+
+
+```{r}
+#Using the function to calculate mean, var, sd, min, and max 
+#from the bp treatment and placebo datasets
+task5_func(bp_list)
+
+task5_func(bp_list, "var")
+
+task5_func(bp_list, "sd")
+
+task5_func(bp_list, "min")
+
+task5_func(bp_list, "max")
+```
+
